@@ -39,7 +39,7 @@ import java.util.function.Consumer;
         "logging.level.root=ERROR",
         "logging.level.com.srhdp*=INFO",
         "spring.cloud.stream.kafka.binder.configuration.auto.offset.reset=earliest",
-        "spring.cloud.function.definition=orderEventProducer;paymentProcessor;inventoryProcessor;shippingProcessor;orderEventConsumer",
+        "spring.cloud.function.definition=orderEventProducer;paymentListener;inventoryListener;shippingListener;orderEventConsumer",
         "spring.cloud.stream.bindings.orderEventConsumer-in-0.destination=order-events"
 })
 @EmbeddedKafka(
@@ -58,19 +58,19 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     private StreamBridge streamBridge;
 
-    protected void emitEvent(PaymentEvent event){
+    protected void emitEvent(PaymentEvent event) {
         this.streamBridge.send("payment-events", event);
     }
 
-    protected void emitEvent(InventoryEvent event){
+    protected void emitEvent(InventoryEvent event) {
         this.streamBridge.send("inventory-events", event);
     }
 
-    protected void emitEvent(ShippingEvent event){
+    protected void emitEvent(ShippingEvent event) {
         this.streamBridge.send("shipping-events", event);
     }
 
-    protected UUID initiateOrder(OrderCreateRequest request){
+    protected UUID initiateOrder(OrderCreateRequest request) {
         var orderIdRef = new AtomicReference<UUID>();
         this.client
                 .post()
@@ -85,7 +85,7 @@ public abstract class AbstractIntegrationTest {
         return orderIdRef.get();
     }
 
-    protected void verifyOrderDetails(UUID orderId, Consumer<OrderDetails> assertion){
+    protected void verifyOrderDetails(UUID orderId, Consumer<OrderDetails> assertion) {
         this.client
                 .get()
                 .uri("/order/{orderId}", orderId)
@@ -100,7 +100,7 @@ public abstract class AbstractIntegrationTest {
                 });
     }
 
-    protected void verifyAllOrders(UUID... orderIds){
+    protected void verifyAllOrders(UUID... orderIds) {
         this.client
                 .get()
                 .uri("/order/all")
@@ -113,22 +113,22 @@ public abstract class AbstractIntegrationTest {
                 });
     }
 
-    protected void verifyOrderCreatedEvent(UUID orderId, int totalAmount){
+    protected void verifyOrderCreatedEvent(UUID orderId, int totalAmount) {
         expectEvent(OrderEvent.OrderCreated.class, e -> {
             Assertions.assertEquals(totalAmount, e.totalAmount());
             Assertions.assertEquals(orderId, e.orderId());
         });
     }
 
-    protected void verifyOrderCancelledEvent(UUID orderId){
+    protected void verifyOrderCancelledEvent(UUID orderId) {
         expectEvent(OrderEvent.OrderCancelled.class, e -> Assertions.assertEquals(orderId, e.orderId()));
     }
 
-    protected void verifyOrderCompletedEvent(UUID orderId){
+    protected void verifyOrderCompletedEvent(UUID orderId) {
         expectEvent(OrderEvent.OrderCompleted.class, e -> Assertions.assertEquals(orderId, e.orderId()));
     }
 
-    protected <T> void expectEvent(Class<T> type, Consumer<T> assertion){
+    protected <T> void expectEvent(Class<T> type, Consumer<T> assertion) {
         resFlux
                 //.next()
                 .timeout(Duration.ofSeconds(2), Mono.empty())
@@ -138,7 +138,7 @@ public abstract class AbstractIntegrationTest {
                 .verifyComplete();
     }
 
-    protected void expectNoEvent(){
+    protected void expectNoEvent() {
         resFlux
                 .next()
                 .timeout(Duration.ofSeconds(2), Mono.empty())
@@ -150,7 +150,7 @@ public abstract class AbstractIntegrationTest {
     static class TestConfig {
 
         @Bean
-        public Consumer<Flux<OrderEvent>> orderEventConsumer(){
+        public Consumer<Flux<OrderEvent>> orderEventConsumer() {
             return f -> f.doOnNext(resSink::tryEmitNext).subscribe();
         }
 

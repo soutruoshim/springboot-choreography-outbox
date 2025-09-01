@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS order_payment;
 DROP TABLE IF EXISTS order_inventory;
 DROP TABLE IF EXISTS purchase_order;
+DROP TABLE IF EXISTS order_outbox;
 
 CREATE TABLE purchase_order (
                                 order_id uuid default random_uuid() primary key,
@@ -33,6 +34,7 @@ CREATE TABLE order_inventory (
                                  message VARCHAR(50),
                                  foreign key (order_id) references purchase_order(order_id)
 );
+
 CREATE TABLE order_outbox (
                               id bigint AUTO_INCREMENT primary key,
                               message binary(10000),
