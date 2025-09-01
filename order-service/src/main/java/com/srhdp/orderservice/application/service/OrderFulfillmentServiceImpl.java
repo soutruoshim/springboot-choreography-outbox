@@ -5,8 +5,12 @@ import com.srhdp.orderservice.application.entity.PurchaseOrder;
 import com.srhdp.orderservice.application.mapper.EntityDtoMapper;
 import com.srhdp.orderservice.application.repository.PurchaseOrderRepository;
 import com.srhdp.orderservice.common.dto.PurchaseOrderDto;
+import com.srhdp.orderservice.common.service.OrderEventListener;
 import com.srhdp.orderservice.common.service.OrderFulfillmentService;
+import com.srhdp.orderservice.messaging.config.OrderEventPublisherConfig;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -19,18 +23,24 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class OrderFulfillmentServiceImpl implements OrderFulfillmentService {
 
+    private static final Logger log = LoggerFactory.getLogger(OrderFulfillmentServiceImpl.class);
+
     private final PurchaseOrderRepository repository;
+    private final OrderEventListener orderEventListener;
 
     @Override
-    public Mono<PurchaseOrderDto> complete(UUID orderId) {
+    public Mono<Void> complete(UUID orderId) {
         return this.repository.getWhenOrderComponentsCompleted(orderId)
-                .transform(this.updateStatus(OrderStatus.COMPLETED));
+                .doOnNext(data -> System.out.println("DEBUG >>> " + data))
+                .transform(this.updateStatus(OrderStatus.COMPLETED))
+                .flatMap(this.orderEventListener::onOrderCompleted);
     }
 
     @Override
-    public Mono<PurchaseOrderDto> cancel(UUID orderId) {
+    public Mono<Void> cancel(UUID orderId) {
         return this.repository.findByOrderIdAndStatus(orderId, OrderStatus.PENDING)
-                .transform(this.updateStatus(OrderStatus.CANCELLED));
+                .transform(this.updateStatus(OrderStatus.CANCELLED))
+                .flatMap(this.orderEventListener::onOrderCancelled);
     }
 
     private Function<Mono<PurchaseOrder>, Mono<PurchaseOrderDto>> updateStatus(OrderStatus status) {

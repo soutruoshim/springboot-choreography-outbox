@@ -9,6 +9,7 @@ import com.srhdp.shippingservice.application.repository.ShipmentRepository;
 import com.srhdp.shippingservice.common.dto.ScheduleRequest;
 import com.srhdp.shippingservice.common.dto.ShipmentDto;
 import com.srhdp.shippingservice.common.service.ShippingService;
+import com.srhdp.shippingservice.messaging.config.OrderEventProcessorConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -16,11 +17,16 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @RequiredArgsConstructor
 public class ShippingServiceImpl implements ShippingService {
 
+
     private final ShipmentRepository repository;
+    private static final Logger log = LoggerFactory.getLogger(ShippingServiceImpl.class);
 
     @Override
     public Mono<Void> addShipment(ScheduleRequest request) {

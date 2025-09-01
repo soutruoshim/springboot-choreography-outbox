@@ -30,7 +30,7 @@ public class OrderServiceImpl implements OrderService {
         var entity = EntityDtoMapper.toPurchaseOrder(request);
         return this.repository.save(entity)
                 .map(EntityDtoMapper::toPurchaseOrderDto)
-                .doOnNext(eventListener::emitOrderCreated);
+                .flatMap(dto -> this.eventListener.onOrderCreated(dto).thenReturn(dto));
     }
 
     @Override

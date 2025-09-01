@@ -4,6 +4,7 @@ import com.srhdp.orderservice.application.entity.OrderInventory;
 import com.srhdp.orderservice.application.mapper.EntityDtoMapper;
 import com.srhdp.orderservice.application.repository.OrderInventoryRepository;
 import com.srhdp.orderservice.common.dto.OrderInventoryDto;
+import com.srhdp.orderservice.common.service.OrderFulfillmentService;
 import com.srhdp.orderservice.common.service.inventory.InventoryComponentFetcher;
 import com.srhdp.orderservice.common.service.inventory.InventoryComponentStatusListener;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,8 @@ public class InventoryComponentService implements InventoryComponentFetcher, Inv
 
     private static final OrderInventoryDto DEFAULT = OrderInventoryDto.builder().build();
     private final OrderInventoryRepository repository;
+    private final OrderFulfillmentService fulfillmentService;
+
 
     @Override
     public Mono<OrderInventoryDto> getComponent(UUID orderId) {
@@ -30,14 +33,14 @@ public class InventoryComponentService implements InventoryComponentFetcher, Inv
     public Mono<Void> onSuccess(OrderInventoryDto message) {
         return this.repository.findByOrderId(message.orderId())
                 .switchIfEmpty(Mono.defer(() -> this.add(message, true)))
-                .then();
+                .then(this.fulfillmentService.complete(message.orderId()));
     }
 
     @Override
     public Mono<Void> onFailure(OrderInventoryDto message) {
         return this.repository.findByOrderId(message.orderId())
                 .switchIfEmpty(Mono.defer(() -> this.add(message, false)))
-                .then();
+                .then(this.fulfillmentService.cancel(message.orderId()));
     }
 
     @Override

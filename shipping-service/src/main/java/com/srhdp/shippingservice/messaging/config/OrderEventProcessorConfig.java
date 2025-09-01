@@ -34,6 +34,7 @@ public class OrderEventProcessorConfig {
     }
 
     private Message<ShippingEvent> toMessage(ShippingEvent event) {
+        log.info("shipping service to message {}", event.orderId());
         return MessageBuilder.withPayload(event)
                 .setHeader(KafkaHeaders.KEY, event.orderId().toString())
                 .build();

@@ -1,25 +1,21 @@
 spring:
   cloud:
     function:
-      definition: orderEventProducer;paymentProcessor;inventoryProcessor;shippingProcessor
+      definition: orderEventProducer;paymentListener;inventoryListener;shippingListener
     stream:
       default:
         producer:
           useNativeEncoding: true
       bindings:
-        order-events-channel:
+        orderEventProducer-out-0:
           destination: order-events
-        paymentProcessor-in-0:
+        paymentListener-in-0:
           destination: payment-events
           group: order-service-group
-        #        paymentProcessor-out-0:
-        #          destination: order-events
-        inventoryProcessor-in-0:
+        inventoryListener-in-0:
           destination: inventory-events
           group: order-service-group
-        #        inventoryProcessor-out-0:
-        #          destination: order-events
-        shippingProcessor-in-0:
+        shippingListener-in-0:
           destination: shipping-events
           group: order-service-group
       kafka:
@@ -32,3 +28,7 @@ spring:
           producer-properties:
             "value.serializer": org.springframework.kafka.support.serializer.JsonSerializer
             "key.serializer": org.apache.kafka.common.serialization.StringSerializer
+        bindings:
+          orderEventProducer-out-0:
+            producer:
+              recordMetadataChannel: orderEventResults
